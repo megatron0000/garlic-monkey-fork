@@ -1,12 +1,12 @@
 {
   "dependencies": {
+    "@sinclair/typebox": "^0.24.42",
     "ws": "^8.8.1"
   },
   "name": "garlic-monkey",
   "description": "Repository for the grlic monkey project",
   "version": "0.0.1",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
