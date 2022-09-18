@@ -1,17 +1,20 @@
-const activeSessionsArr = require('../../memory-active-sessions.js');
-const shouldStartGame = require('../library/should-game-start-checker.js');
+import maybeStartGame from '../library/should-game-start-checker.js';
+import activeSessions from "../objects/active-sessions"
 
 module.exports = function onClose(ws) {
     ws.isAlive = false;
-    let removeIndex = activeSessionsArr[ws.sID].activeSockets.indexOf(ws);  //WHY THE ACTUAL FUCK DO I NEED THIS SHIIIIIIIIIIT!!!!!!!!!!!!!
-    if (removeIndex !== -1) {
-        activeSessionsArr[ws.sID].activeSockets[removeIndex] = null;
-        shouldStartGame(activeSessionsArr[ws.sID]);
-    } else {
-        let removeIndexInactive = activeSessionsArr[ws.sID].waitingSockets.indexOf(ws);
-        if (removeIndexInactive !== -1)
-            activeSessionsArr[ws.sID].waitingSockets[removeIndexInactive] = null;
+
+    const session = activeSessions.get(ws.sID); // TODO: is it possible that session === undefined ?
+
+    // ws is either active or waiting
+    if (session.activeSockets.has(ws)) {
+        session.activeSockets.delete(ws);
+        maybeStartGame(session); // TODO: is this necessary here ?
     }
+    else {
+        session.waitingSockets.delete(ws);
+    }
+
     ws.terminate();
 };
 

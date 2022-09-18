@@ -1,38 +1,45 @@
-const chatLogic = require('./chat-logic.js');
-const partLogic = require('./participation-status.js');
+// @ts-check
 
-module.exports = function mainLogic(Session, data, playerWs, isWsActive) {
-    if (Object.hasOwn(data, 'msgType')) { //check if object has required minimun property
-        if (typeof data.msgType === 'string') { //check if property is a string
-            switch (data.msgType) {
-                case 'chatNew':
-                    chatLogic(Session, data, playerWs);
-                    break;
-                case 'newData':
-                    if (!isWsActive) { //inctive sockets can only chat
-                        playerWs.send(JSON.stringify({
-                            msgType: 'devReport', 
-                            msgContent: { 
-                                report: 'DENIED: player on waiting line tried sending "newData" msgType' 
-                            } 
-                        }));
-                        return;
-                    } else {
-                        //game logic here
-                    }
-                    console.log("main-logic.js --> 'newData' received");
-                case 'participationStatus': //changes player status if possible
-                    console.log("main-logic.js --> 'participationStatus' received");
-                    partLogic(Session, data, playerWs, isWsActive);
-                    console.log("main-logic.js --> 'participationStatus' processed");
-                default:
-                    console.log("ERROR --> main-logic.js --> msgType of received data is invalid");
-                    break;
+import SessionObject from "../objects/session-object";
+import chatLogic from "./chat-logic";
+import { devReportMessage } from "./message-spec";
+import partLogic from "./participation-status";
+
+
+/**
+ * 
+ * @param {SessionObject} session
+ * @param {import("./message-spec").Message} message 
+ * @param {*} ws 
+ */
+export default function mainLogic(session, message, ws) {
+    switch (message.msgType) {
+
+        case 'chatNew':
+            chatLogic(session, message, ws);
+            return;
+
+        case 'newData':
+            if (!session.activeSockets.has(ws)) { //inactive sockets can only chat
+                ws.send(JSON.stringify(devReportMessage('DENIED: player on waiting line tried sending "newData" msgType')));
+                return;
             }
-        } else
-            console.log("ERROR --> main-logic.js --> msgType type error");
-    } else
-        console.log("ERROR --> main-logic.js --> object has no msgType property");
+
+            // game logic here
+
+            console.log("main-logic.js --> 'newData' received");
+            return;
+
+        case 'participationStatus': //changes player status if possible
+            console.log("main-logic.js --> 'participationStatus' received");
+            partLogic(session, message, ws);
+            console.log("main-logic.js --> 'participationStatus' processed");
+            return;
+
+        default:
+            console.log("ERROR --> main-logic.js --> msgType of received data is invalid");
+            return;
+    }
 }
 
 //TODO: TIMER, REPLAYER, CHANGE WAITING/PLAYING, DISCONNECTOR

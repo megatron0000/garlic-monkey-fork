@@ -1,26 +1,22 @@
-module.exports = function chatLogic(Session, data, playerWs) {
-    if (Object.hasOwn(data, 'msgContent')) { //object has this property
-        if (typeof data.msgContent === 'string') { //and msgContent is string
-            Session.chat.push({ nick: playerWs.garlicName, msgContent: data.msgContent });
-            Session.activeSockets.forEach( ws => { //send new msg to all players in session
-                if (ws !== null) {
-                    ws.send(JSON.stringify({
-                        msgType: 'chatUpdate',
-                        msgContent: { nick: playerWs.garlicName, msgContent: data.msgContent }
-                    }));
-                }
-            });
-            Session.waitingSockets.forEach( ws => { //send new msg to all players in session
-                if (ws !== null) {
-                    ws.send(JSON.stringify({
-                        msgType: 'chatUpdate',
-                        msgContent: { nick: playerWs.garlicName, msgContent: data.msgContent }
-                    }));
-                }
-            });
-        } else 
-            console.log("ERROR --> chat-logic.js --> msgContent not a string");
-    }
-    else
-        console.log("ERROR --> chat-logic.js --> msgContent property not found on received message");
+// @ts-check
+
+import SessionObject from "../objects/session-object";
+import { chatUpdateMessage } from "./message-spec";
+
+/**
+ * 
+ * @param {SessionObject} session
+ * @param {import("./message-spec").ChatNewMessage} message 
+ * @param {*} ws 
+ */
+export default function chatLogic(session, message, ws) {
+    session.chat.push({ nick: ws.garlicName, msgContent: message.msgContent });
+
+    session.activeSockets.forEach(ws => { //send new msg to all players in session
+        ws.send(JSON.stringify(chatUpdateMessage(ws.garlicName, message.msgContent)));
+    });
+
+    session.waitingSockets.forEach(ws => { //send new msg to all players in session
+        ws.send(JSON.stringify(chatUpdateMessage(ws.garlicName, message.msgContent)));
+    });
 }

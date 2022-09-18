@@ -1,8 +1,8 @@
-const onConnection = require('./websocket-server/on-connection.js');
-const onMessage = require('./websocket-server/on-message.js');
-const onClose = require('./websocket-server/on-close.js');
+import onConnection from "./websocket-server-setup/on-connection";
+import onMessage from "./websocket-server-setup/on-message";
+import onClose from "./websocket-server-setup/on-close";
 
-function sockServSetup(wss) {
+export default function sockServSetup(wss) {
     wss.on('connection', (ws, req) => {
         onConnection(ws, req);
         ws.on('message', (data, isBinary) => onMessage(data, isBinary, ws));
@@ -13,7 +13,6 @@ function sockServSetup(wss) {
 };
 
 //TODO: broadcaster checker
-module.exports = sockServSetup;
 
 
 

@@ -1,39 +1,43 @@
-const activeSessionsArr = require('../../memory-active-sessions');
+import parseMessage from '../library/message-spec';
+import activeSessions from '../objects/active-sessions';
+import mainLogic from '../library/main-logic';
 
-const wsBelongsChecker = require('../library/ws-belongs-checker.js');
-const mainLogic = require('../library/main-logic.js');
+export default function onMessage(data, isBinary, ws) {
 
-module.exports = function onMessage(data, isBinary, ws) {
-    console.log("received message from ws id = "+ws.sID);
-    let parsedData = {};
-    try { 
-        parsedData = JSON.parse(data);
-    }
-    catch( error ) {
-        console.log('WARNING -->> on-message.js -->> catch condition: '+ error );
-        return false;
-    }
-    if ( parsedData === null && typeof parsedData === 'object' && !Array.isArray(parsedData) )
-        return false;
-    if ( ws.sID >= activeSessionsArr.length ) //safety, don't try to access indexes that don't exist //<<<<<<<<<<<<< TODO: MAYBE REMOVE THIS
+    // TODO is it possible that ws.sID refers to a session that does not exist anymore ?
+    // if (ws.sID >= activeSessionsArr.length) //safety, don't try to access indexes that don't exist //<<<<<<<<<<<<< TODO: MAYBE REMOVE THIS
+    //     return null;
+
+    console.log("received message from ws id = " + ws.sID);
+
+    const message = parseMessage(data);
+
+    if (!message) {
         return null;
-    switch (wsBelongsChecker(activeSessionsArr[ws.sID], ws)) { //check socket state on session object
-        case null: //session is finished, to be removed //<<<<<<<<<<<<< TODO: MAYBE REMOVE THIS
-            console.log('ERROR -->> on-message.js -->> socket message in finished session');
-            return null;
-        case -1: //socket does not belong to session
-            console.log('ERROR -->> on-message.js -->> socket message in wrong session(wrong ws.sID)');
-            return null;
-        case 1: //socket belongs to waiting line
-            mainLogic(activeSessionsArr[ws.sID], parsedData, ws, true);
-            break;
-        case 2: //socket belongs to active sockets
-            mainLogic(activeSessionsArr[ws.sID], parsedData, ws, false);
-            break;
-        default:
-            console.log('ERROR -->> on-message.js -->> default triggered on switch condition');
-            break;
     }
+
+    // TODO: MAYBE REMOVE THIS (is this case possible at all ?)
+    if (!activeSessions.has(ws.sID)) {
+        console.log('ERROR -->> on-message.js -->> socket message in finished session');
+        return null;
+    }
+
+    // TODO: this should now be impossible
+    // case -1: //socket does not belong to session
+    //         console.log('ERROR -->> on-message.js -->> socket message in wrong session(wrong ws.sID)');
+    //         return null;
+
+
+    const session = activeSessions.get(w.sID);
+
+    // Either ws is active or waiting
+    if (session.activeSockets.has(ws)) {
+        mainLogic(session, message, ws, true);
+    }
+    else {
+        mainLogic(session, message, ws, false);
+    }
+    
 };
 
 //TODO: socket status checker before send
